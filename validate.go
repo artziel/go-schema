@@ -20,6 +20,7 @@ func Validate(model interface{}) (Result, error) {
 			field := v.Elem().Field(i)
 			fieldName := v.Elem().Type().Field(i).Name
 			fieldErrors := []error{}
+			checkRequirements := false
 
 			st, err := parse_tag(tag)
 			if err != nil {
@@ -43,6 +44,9 @@ func Validate(model interface{}) (Result, error) {
 							fieldErrors = append(fieldErrors, ErrStringFieldRegexMatchFail)
 						}
 					}
+					if value != "" {
+						checkRequirements = true
+					}
 				case reflect.Float32, reflect.Float64:
 					value := field.Float()
 					if st.Required && value == 0 {
@@ -54,6 +58,9 @@ func Validate(model interface{}) (Result, error) {
 						if st.Max > 0 && value > st.Max {
 							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
 						}
+					}
+					if value != 0 {
+						checkRequirements = true
 					}
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					value := field.Int()
@@ -67,6 +74,9 @@ func Validate(model interface{}) (Result, error) {
 							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
 						}
 					}
+					if value != 0 {
+						checkRequirements = true
+					}
 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					value := field.Uint()
 					if st.Required && value == 0 {
@@ -79,9 +89,12 @@ func Validate(model interface{}) (Result, error) {
 							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
 						}
 					}
+					if value != 0 {
+						checkRequirements = true
+					}
 				}
 
-				if len(st.Require) > 0 {
+				if len(st.Require) > 0 && checkRequirements {
 					for _, r := range st.Require {
 						_, exists := v.Elem().Type().FieldByName(r)
 						if !exists {
