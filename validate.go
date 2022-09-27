@@ -1,6 +1,47 @@
 package schema
 
-import "reflect"
+import (
+	"reflect"
+	"strconv"
+)
+
+func testInValues(field *reflect.Value, kind reflect.Kind, values []string) error {
+
+	for _, v := range values {
+		if v[0] == '\'' {
+			v = v[1:]
+		}
+		if v[len(v)-1] == '\'' {
+			v = v[:len(v)-1]
+		}
+		switch kind {
+		case reflect.String:
+			if v == field.String() {
+				return nil
+			}
+		case reflect.Float32, reflect.Float64:
+			a := field.Float()
+			b, _ := strconv.ParseFloat(v, 64)
+			if a == b {
+				return nil
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			a := field.Int()
+			b, _ := strconv.Atoi(v)
+			if a == int64(b) {
+				return nil
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			a := field.Uint()
+			b, _ := strconv.Atoi(v)
+			if a == uint64(b) {
+				return nil
+			}
+		}
+	}
+
+	return ErrTagRestrictToNotMatch
+}
 
 func Validate(model interface{}) (Result, error) {
 	result := Result{
@@ -91,6 +132,12 @@ func Validate(model interface{}) (Result, error) {
 					}
 					if value != 0 {
 						checkRequirements = true
+					}
+				}
+
+				if len(st.RestrictTo) > 0 {
+					if err := testInValues(&field, kind, st.RestrictTo); err != nil {
+						fieldErrors = append(fieldErrors, err)
 					}
 				}
 
