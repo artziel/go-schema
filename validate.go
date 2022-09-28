@@ -1,46 +1,79 @@
 package schema
 
 import (
+	"fmt"
 	"reflect"
-	"strconv"
+	"regexp"
 )
 
-func testInValues(field *reflect.Value, kind reflect.Kind, values []string) error {
+func validateString(t Tag, value string) []error {
+	errs := []error{}
 
-	for _, v := range values {
-		if v[0] == '\'' {
-			v = v[1:]
+	if t.Exists("required") && value == "" {
+		errs = append(errs, ErrStringFieldrequired)
+	} else if value != "" {
+		length := len([]rune(value))
+		if t.GetUint("minLength") > 0 && uint64(length) < t.GetUint("minLength") {
+			errs = append(errs, ErrStringFieldMinlength)
 		}
-		if v[len(v)-1] == '\'' {
-			v = v[:len(v)-1]
+		if t.GetUint("maxLength") > 0 && uint64(length) > t.GetUint("maxLength") {
+			errs = append(errs, ErrStringFieldMaxlength)
 		}
-		switch kind {
-		case reflect.String:
-			if v == field.String() {
-				return nil
-			}
-		case reflect.Float32, reflect.Float64:
-			a := field.Float()
-			b, _ := strconv.ParseFloat(v, 64)
-			if a == b {
-				return nil
-			}
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			a := field.Int()
-			b, _ := strconv.Atoi(v)
-			if a == int64(b) {
-				return nil
-			}
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			a := field.Uint()
-			b, _ := strconv.Atoi(v)
-			if a == uint64(b) {
-				return nil
+		if t.GetString("regex") != "" {
+			r, err := regexp.Compile(value)
+			if err != nil {
+				errs = append(errs, ErrTagRegexValueFailToCompile)
+			} else if !r.MatchString(value) {
+				errs = append(errs, ErrStringFieldRegexMatchFail)
 			}
 		}
 	}
 
-	return ErrTagRestrictToNotMatch
+	require := t.GetSliceString("restrictTo", ' ')
+	fmt.Printf("%v\n", require)
+	if len(require) > 0 {
+		match := false
+		for _, v := range require {
+			if v == value {
+				match = true
+			}
+		}
+		if !match {
+			errs = append(errs, ErrTagRestrictToNotMatch)
+		}
+	}
+
+	return errs
+}
+
+func validateNumeric(t Tag, value float64) []error {
+	errs := []error{}
+
+	if t.Exists("required") && value == 0 {
+		errs = append(errs, ErrNumericFieldrequired)
+	} else if value != 0 {
+		if t.GetFloat("min") > 0 && value < t.GetFloat("min") {
+			errs = append(errs, ErrNumericFieldMinValue)
+		}
+		if t.GetFloat("max") > 0 && value > t.GetFloat("max") {
+			errs = append(errs, ErrNumericFieldMaxValue)
+		}
+	}
+
+	require := t.GetSliceFloat("restrictTo", ' ')
+	if len(require) > 0 {
+		match := false
+		for _, v := range require {
+			if v == value {
+				match = true
+			}
+		}
+		if !match {
+			errs = append(errs, ErrTagRestrictToNotMatch)
+		}
+	}
+
+	return errs
 }
 
 func Validate(model interface{}) (Result, error) {
@@ -55,130 +88,78 @@ func Validate(model interface{}) (Result, error) {
 	}
 
 	for i := 0; i < v.Elem().NumField(); i++ {
-		tag := v.Elem().Type().Field(i).Tag.Get("schema")
-		if tag != "" {
+		t := ParseTag(v.Elem().Type().Field(i).Tag.Get("schema"))
 
-			field := v.Elem().Field(i)
-			fieldName := v.Elem().Type().Field(i).Name
+		if !t.IsEmpty() {
+
 			fieldErrors := []error{}
 			checkRequirements := false
 
-			st, err := parse_tag(tag)
-			if err != nil {
-				fieldErrors = append(fieldErrors, err)
-			} else {
-				kind := v.Elem().Type().Field(i).Type.Kind()
-				switch kind {
-				case reflect.String:
-					value := field.String()
-					if st.Required && value == "" {
-						fieldErrors = append(fieldErrors, ErrStringFieldrequired)
-					} else {
-						length := len([]rune(value))
-						if st.MinLength > 0 && uint(length) < st.MinLength {
-							fieldErrors = append(fieldErrors, ErrStringFieldMinlength)
-						}
-						if st.MaxLength > 0 && uint(length) > st.MaxLength {
-							fieldErrors = append(fieldErrors, ErrStringFieldMaxlength)
-						}
-						if st.Regex != nil && !st.Regex.MatchString(value) {
-							fieldErrors = append(fieldErrors, ErrStringFieldRegexMatchFail)
-						}
-					}
-					if value != "" {
-						checkRequirements = true
-					}
-				case reflect.Float32, reflect.Float64:
-					value := field.Float()
-					if st.Required && value == 0 {
-						fieldErrors = append(fieldErrors, ErrNumericFieldrequired)
-					} else {
-						if st.Min > 0 && value < st.Min {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMinValue)
-						}
-						if st.Max > 0 && value > st.Max {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
-						}
-					}
-					if value != 0 {
-						checkRequirements = true
-					}
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					value := field.Int()
-					if st.Required && value == 0 {
-						fieldErrors = append(fieldErrors, ErrNumericFieldrequired)
-					} else {
-						if st.Min > 0 && float64(value) < st.Min {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMinValue)
-						}
-						if st.Max > 0 && float64(value) > st.Max {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
-						}
-					}
-					if value != 0 {
-						checkRequirements = true
-					}
-				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-					value := field.Uint()
-					if st.Required && value == 0 {
-						fieldErrors = append(fieldErrors, ErrNumericFieldrequired)
-					} else {
-						if st.Min > 0 && float64(value) < st.Min {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMinValue)
-						}
-						if st.Max > 0 && float64(value) > st.Max {
-							fieldErrors = append(fieldErrors, ErrNumericFieldMaxValue)
-						}
-					}
-					if value != 0 {
-						checkRequirements = true
-					}
+			switch v.Elem().Type().Field(i).Type.Kind() {
+			case reflect.String:
+				value := v.Elem().Field(i).String()
+				fieldErrors = append(fieldErrors, validateString(t, value)...)
+				if value != "" {
+					checkRequirements = true
 				}
-
-				if len(st.RestrictTo) > 0 {
-					if err := testInValues(&field, kind, st.RestrictTo); err != nil {
-						fieldErrors = append(fieldErrors, err)
-					}
+			case reflect.Float32, reflect.Float64:
+				value := v.Elem().Field(i).Float()
+				fieldErrors = append(fieldErrors, validateNumeric(t, value)...)
+				if value != 0 {
+					checkRequirements = true
 				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				value := v.Elem().Field(i).Int()
+				fieldErrors = append(fieldErrors, validateNumeric(t, float64(value))...)
+				if value != 0 {
+					checkRequirements = true
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				value := v.Elem().Field(i).Uint()
+				fieldErrors = append(fieldErrors, validateNumeric(t, float64(value))...)
+				if value != 0 {
+					checkRequirements = true
+				}
+			}
 
-				if len(st.Require) > 0 && checkRequirements {
-					for _, r := range st.Require {
-						_, exists := v.Elem().Type().FieldByName(r)
-						if !exists {
-							fieldErrors = append(fieldErrors, ErrTagRequireFieldNotExists)
-							break
-						} else {
-							required := reflect.Indirect(v).FieldByName(r)
-							if required.Kind() == reflect.String {
-								if required.String() == "" {
-									fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-									break
-								}
-							} else if required.Kind() == reflect.Float32 || required.Kind() == reflect.Float64 {
-								if required.Float() == 0 {
-									fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-									break
-								}
-							} else if required.Kind() == reflect.Int || required.Kind() == reflect.Int8 || required.Kind() == reflect.Int16 || required.Kind() == reflect.Int32 || required.Kind() == reflect.Int64 {
-								if required.Int() == 0 {
-									fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-									break
-								}
-							} else if required.Kind() == reflect.Uint || required.Kind() == reflect.Uint8 || required.Kind() == reflect.Uint16 || required.Kind() == reflect.Uint32 || required.Kind() == reflect.Uint64 {
-								if required.Uint() == 0 {
-									fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-									break
-								}
+			if t.Exists("require") && checkRequirements {
+				for _, r := range t.GetSliceString("require", ' ') {
+					_, exists := v.Elem().Type().FieldByName(r)
+					if !exists {
+						fieldErrors = append(fieldErrors, ErrTagRequireFieldNotExists)
+						break
+					} else {
+						required := reflect.Indirect(v).FieldByName(r)
+						if required.Kind() == reflect.String {
+							if required.String() == "" {
+								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
+								break
+							}
+						} else if required.Kind() == reflect.Float32 || required.Kind() == reflect.Float64 {
+							if required.Float() == 0 {
+								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
+								break
+							}
+						} else if required.Kind() == reflect.Int || required.Kind() == reflect.Int8 || required.Kind() == reflect.Int16 || required.Kind() == reflect.Int32 || required.Kind() == reflect.Int64 {
+							if required.Int() == 0 {
+								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
+								break
+							}
+						} else if required.Kind() == reflect.Uint || required.Kind() == reflect.Uint8 || required.Kind() == reflect.Uint16 || required.Kind() == reflect.Uint32 || required.Kind() == reflect.Uint64 {
+							if required.Uint() == 0 {
+								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
+								break
 							}
 						}
 					}
 				}
 			}
+
 			if len(fieldErrors) > 0 {
-				if st.Name != "" {
-					result.Fields[st.Name] = Field{Errors: fieldErrors}
+				if t.GetString("name") != "" {
+					result.Fields[t.GetString("name")] = Field{Errors: fieldErrors}
 				} else {
-					result.Fields[fieldName] = Field{Errors: fieldErrors}
+					result.Fields[v.Elem().Type().Field(i).Name] = Field{Errors: fieldErrors}
 				}
 			}
 		}

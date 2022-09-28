@@ -10,14 +10,14 @@ import (
 
 type Sample struct {
 	ID     uint   `json:"id" schema:"name:id,required"`
-	Status string `json:"status" schema:"name:status,required,restrictTo:'IS  ENABLED' DISABLED LOCKED"`
+	Status string `json:"status" schema:"name:status,required,restrictTo:'IS ENABLED' DISABLED LOCKED"`
 }
 
 func main() {
 
 	val := Sample{
 		ID:     1,
-		Status: "IS ENABLED",
+		Status: "IS ENABLEDd",
 	}
 
 	result, err := schema.Validate(&val)
