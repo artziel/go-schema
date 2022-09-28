@@ -11,8 +11,8 @@ import (
 type Sample struct {
 	ID       uint   `json:"id" schema:"name:id,required"`
 	Username string `json:"username" schema:"name:username,require:Password"`
-	Password string `json:"password" schema:"name:password"`
-	Status   string `json:"status" schema:"name:status,restrictTo:ENABLED DISABLED LOCKED,require:Username Age"`
+	Password string `json:"password" schema:"name:password,regex:[a-zA-Z].*"`
+	Status   string `json:"status" schema:"name:status,restrictTo:ENABLED DISABLED LOCKED,require:Username"`
 }
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 		ID:       1,
 		Username: "artziel",
 		Status:   "ENABLED",
-		Password: "123",
+		Password: "asdf",
 	}
 
 	result, err := schema.Validate(&val)

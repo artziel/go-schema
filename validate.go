@@ -33,13 +33,14 @@ func validateString(t Tag, model reflect.Value, field reflect.Value) []error {
 		if t.GetUint("maxLength") > 0 && uint64(length) > t.GetUint("maxLength") {
 			errs = append(errs, ErrStringFieldMaxlength)
 		}
-		if t.GetString("regex") != "" {
-			r, err := regexp.Compile(value)
+		if t.HasValue("regex") {
+			r, err := regexp.Compile(t.GetString("regex"))
 			if err != nil {
 				errs = append(errs, ErrTagRegexValueFailToCompile)
 			} else if !r.MatchString(value) {
 				errs = append(errs, ErrStringFieldRegexMatchFail)
 			}
+
 		}
 	}
 
@@ -102,10 +103,10 @@ func validateNumeric(t Tag, model reflect.Value, field reflect.Value) []error {
 		}
 	}
 
-	require := t.GetSliceFloat("restrictTo", ' ')
-	if len(require) > 0 {
+	values := t.GetSliceFloat("restrictTo", ' ')
+	if len(values) > 0 {
 		match := false
-		for _, v := range require {
+		for _, v := range values {
 			if v == value {
 				match = true
 			}

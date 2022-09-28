@@ -1,0 +1,649 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>go-schema: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/artziel/go-schema/schema.go (26.9%)</option>
+				
+				<option value="file1">github.com/artziel/go-schema/tag.go (66.1%)</option>
+				
+				<option value="file2">github.com/artziel/go-schema/utilities.go (100.0%)</option>
+				
+				<option value="file3">github.com/artziel/go-schema/validate.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package schema
+
+import (
+        "encoding/json"
+)
+
+/*
+Custom errors slice type. Used for extend json encoding field errors
+*/
+type fieldErrors []error
+
+/*
+Allow errors slice json encoding
+*/
+func (se fieldErrors) MarshalJSON() ([]byte, error) <span class="cov0" title="0">{
+        data := []byte("[")
+        for i, err := range se </span><span class="cov0" title="0">{
+                if i != 0 </span><span class="cov0" title="0">{
+                        data = append(data, ',')
+                }</span>
+
+                <span class="cov0" title="0">j, err := json.Marshal(err.Error())
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+
+                <span class="cov0" title="0">data = append(data, j...)</span>
+        }
+        <span class="cov0" title="0">data = append(data, ']')
+
+        return data, nil</span>
+}
+
+/*
+Structure that will contain validation errors
+*/
+type Field struct {
+        Errors fieldErrors `json:"errors"`
+}
+
+/*
+Structure return by Validation function
+
+After validation will contain only fields that fails
+*/
+type Result struct {
+        Fields map[string]Field `json:"fields"`
+}
+
+/*
+Check if Result structure contain at least one field with errors
+*/
+func (r *Result) HasErrors() bool <span class="cov8" title="1">{
+        return len(r.Fields) &gt; 0
+}</span>
+
+/*
+Add an error to a field on the Result structure. If fieldName do not exist on Result fields,
+add a new field entry with the error, otherwise append the error to the field entry
+*/
+func (r *Result) AddFieldError(fieldName string, err error) <span class="cov0" title="0">{
+        f := Field{
+                Errors: []error{},
+        }
+        if err != nil </span><span class="cov0" title="0">{
+                if _, exists := r.Fields[fieldName]; exists </span><span class="cov0" title="0">{
+                        f = r.Fields[fieldName]
+                        f.Errors = append(f.Errors, err)
+                }</span> else<span class="cov0" title="0"> {
+                        f = Field{Errors: []error{err}}
+                }</span>
+                <span class="cov0" title="0">r.Fields[fieldName] = f</span>
+        }
+}
+
+/*
+Add an slice of errors to a field on the Result structure. If fieldName do not exist on Result fields,
+add a new field entry with the error, otherwise append the errors to the field entry
+*/
+func (r *Result) AddFieldErrors(fieldName string, errs []error) <span class="cov8" title="1">{
+        f := Field{
+                Errors: []error{},
+        }
+        if errs != nil </span><span class="cov8" title="1">{
+                if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                        if _, exists := r.Fields[fieldName]; exists </span><span class="cov0" title="0">{
+                                f = r.Fields[fieldName]
+                                f.Errors = append(f.Errors, errs...)
+                        }</span> else<span class="cov8" title="1"> {
+                                f = Field{Errors: errs}
+                        }</span>
+                        <span class="cov8" title="1">r.Fields[fieldName] = f</span>
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package schema
+
+import (
+        "strconv"
+        "strings"
+)
+
+/*
+Structure that will contain the values of the parsed tag
+*/
+type Tag struct {
+        Values map[string]string
+}
+
+/*
+Check if the Tag structure contains values parsed or not
+*/
+func (t *Tag) IsEmpty() bool <span class="cov8" title="1">{
+        return len(t.Values) == 0
+}</span>
+
+/*
+Check if the Tag structure contains the specified entry
+*/
+func (t *Tag) Exists(name string) bool <span class="cov8" title="1">{
+        if _, exists := t.Values[strings.ToLower(name)]; exists </span><span class="cov8" title="1">{
+                return true
+        }</span>
+        <span class="cov8" title="1">return false</span>
+}
+
+/*
+Check if the Tag structure entry has a value
+*/
+func (t *Tag) HasValue(name string) bool <span class="cov8" title="1">{
+        if t.Exists(name) </span><span class="cov8" title="1">{
+                return t.Values[strings.ToLower(name)] != ""
+        }</span>
+        <span class="cov8" title="1">return false</span>
+}
+
+/*
+Return the value of the specified entry as string
+*/
+func (t *Tag) GetString(name string) string <span class="cov8" title="1">{
+        if t.Exists(name) </span><span class="cov8" title="1">{
+                return t.Values[strings.ToLower(name)]
+        }</span>
+        <span class="cov8" title="1">return ""</span>
+}
+
+/*
+Return the value of the specified entry as uint64
+*/
+func (t *Tag) GetUint(name string) uint64 <span class="cov8" title="1">{
+        v := t.GetString(name)
+
+        if v != "" </span><span class="cov8" title="1">{
+                value, _ := strconv.ParseUint(v, 10, 64)
+                return value
+        }</span>
+
+        <span class="cov8" title="1">return 0</span>
+}
+
+/*
+Return the value of the specified entry as int64
+*/
+func (t *Tag) GetInt(name string) int64 <span class="cov0" title="0">{
+        v := t.GetString(name)
+
+        if v != "" </span><span class="cov0" title="0">{
+                value, _ := strconv.Atoi(v)
+                return int64(value)
+        }</span>
+
+        <span class="cov0" title="0">return 0</span>
+}
+
+/*
+Return the value of the specified entry as float64
+*/
+func (t *Tag) GetFloat(name string) float64 <span class="cov8" title="1">{
+        v := t.GetString(name)
+
+        if v != "" </span><span class="cov8" title="1">{
+                value, _ := strconv.ParseFloat(v, 64)
+                return value
+        }</span>
+
+        <span class="cov8" title="1">return 0</span>
+}
+
+/*
+Return an Slice of string of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
+func (t *Tag) GetSliceString(name string, separator byte) []string <span class="cov8" title="1">{
+        result := []string{}
+        v := t.GetString(name)
+        if v == "" </span><span class="cov8" title="1">{
+                return result
+        }</span>
+
+        <span class="cov8" title="1">for _, itm := range splitAt(v, separator, '\'') </span><span class="cov8" title="1">{
+                result = append(result, strings.Trim(itm, "'"))
+        }</span>
+
+        <span class="cov8" title="1">return result</span>
+}
+
+/*
+Return an Slice of int64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
+func (t *Tag) GetSliceInt(name string, separator byte) []int64 <span class="cov0" title="0">{
+        values := t.GetSliceString(name, separator)
+        if len(values) == 0 </span><span class="cov0" title="0">{
+                return []int64{}
+        }</span>
+        <span class="cov0" title="0">result := []int64{}
+
+        for _, itm := range values </span><span class="cov0" title="0">{
+                v, _ := strconv.Atoi(itm)
+                result = append(result, int64(v))
+        }</span>
+
+        <span class="cov0" title="0">return result</span>
+}
+
+/*
+Return an Slice of float64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
+func (t *Tag) GetSliceFloat(name string, separator byte) []float64 <span class="cov8" title="1">{
+        values := t.GetSliceString(name, separator)
+        if len(values) == 0 </span><span class="cov8" title="1">{
+                return []float64{}
+        }</span>
+        <span class="cov8" title="1">result := []float64{}
+
+        for _, itm := range values </span><span class="cov8" title="1">{
+                v, _ := strconv.ParseFloat(itm, 64)
+                result = append(result, v)
+        }</span>
+
+        <span class="cov8" title="1">return result</span>
+}
+
+/*
+Return an Slice of uint64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
+func (t *Tag) GetSliceUint(name string, separator byte) []uint64 <span class="cov0" title="0">{
+        values := t.GetSliceString(name, separator)
+        if len(values) == 0 </span><span class="cov0" title="0">{
+                return []uint64{}
+        }</span>
+        <span class="cov0" title="0">result := []uint64{}
+
+        for _, itm := range values </span><span class="cov0" title="0">{
+                v, _ := strconv.ParseUint(itm, 10, 64)
+                result = append(result, v)
+        }</span>
+
+        <span class="cov0" title="0">return result</span>
+}
+
+/*
+Parse an string and return a populated Tag structure value
+*/
+func ParseTag(value string) Tag <span class="cov8" title="1">{
+
+        tag := Tag{
+                Values: map[string]string{},
+        }
+
+        values := splitAt(value, ',', '\'')
+
+        for _, v := range values </span><span class="cov8" title="1">{
+                p := toPair(v, ':')
+                tag.Values[p.Name] = p.Value
+        }</span>
+
+        <span class="cov8" title="1">return tag</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package schema
+
+import "strings"
+
+/*
+Structure used as return value by the function toPair
+*/
+type pair struct {
+        Name  string
+        Value string
+}
+
+/*
+Split an string in 2 an return a pair struct value
+
+The first part resulting from the split will be assigned to Name and
+the second one to Value
+*/
+func toPair(value string, separator byte) pair <span class="cov8" title="1">{
+        result := pair{}
+
+        i := strings.Index(value, string(separator))
+        if i &gt; -1 &amp;&amp; i &lt; len([]rune(value)) </span><span class="cov8" title="1">{
+                result.Name = value[:i]
+                result.Value = strings.Trim(value[i+1:], " \n\r\t")
+        }</span> else<span class="cov8" title="1"> {
+                result.Name = value
+        }</span>
+
+        <span class="cov8" title="1">result.Name = strings.Trim(strings.ToLower(result.Name), " \n\r\t")
+
+        return result</span>
+}
+
+/*
+Split an string on N parts
+
+The "separator" param indicates the character from which the string will be split, the separator
+character will be ignored during the evaluation if it is between two characters equal to "quote"
+parameter
+*/
+func splitAt(s string, separator byte, quote byte) []string <span class="cov8" title="1">{
+        res := []string{}
+        var beg int
+        var inString bool
+
+        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                if s[i] == separator &amp;&amp; !inString </span><span class="cov8" title="1">{
+                        res = append(res, s[beg:i])
+                        beg = i + 1
+                }</span> else<span class="cov8" title="1"> if s[i] == quote </span><span class="cov8" title="1">{
+                        if !inString </span><span class="cov8" title="1">{
+                                inString = true
+                        }</span> else<span class="cov8" title="1"> if i &gt; 0 &amp;&amp; s[i-1] != '\\' </span><span class="cov8" title="1">{
+                                inString = false
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return append(res, s[beg:])</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package schema
+
+import (
+        "reflect"
+        "regexp"
+)
+
+/*
+Validate struct string field
+
+Rules:
+
+            required:        Empty value not allow
+            minLength:        Min string length allow
+            maxLength:        Max string length allow
+            regex:        Value must match with regular expresion
+                restrictTo: Field value must be one of the listed values
+
+An slice of type "error" will be return containing each failed rule
+*/
+func validateString(t Tag, model reflect.Value, field reflect.Value) []error <span class="cov8" title="1">{
+        errs := []error{}
+
+        value := field.String()
+
+        if t.Exists("required") &amp;&amp; value == "" </span><span class="cov8" title="1">{
+                errs = append(errs, ErrStringFieldrequired)
+        }</span> else<span class="cov8" title="1"> if value != "" </span><span class="cov8" title="1">{
+                length := len([]rune(value))
+                if t.GetUint("minLength") &gt; 0 &amp;&amp; uint64(length) &lt; t.GetUint("minLength") </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrStringFieldMinlength)
+                }</span>
+                <span class="cov8" title="1">if t.GetUint("maxLength") &gt; 0 &amp;&amp; uint64(length) &gt; t.GetUint("maxLength") </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrStringFieldMaxlength)
+                }</span>
+                <span class="cov8" title="1">if t.HasValue("regex") </span><span class="cov8" title="1">{
+                        r, err := regexp.Compile(t.GetString("regex"))
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, ErrTagRegexValueFailToCompile)
+                        }</span> else<span class="cov8" title="1"> if !r.MatchString(value) </span><span class="cov8" title="1">{
+                                errs = append(errs, ErrStringFieldRegexMatchFail)
+                        }</span>
+
+                }
+        }
+
+        <span class="cov8" title="1">values := t.GetSliceString("restrictTo", ' ')
+        if len(values) &gt; 0 </span><span class="cov8" title="1">{
+                match := false
+                for _, v := range values </span><span class="cov8" title="1">{
+                        if v == value </span><span class="cov8" title="1">{
+                                match = true
+                        }</span>
+                }
+                <span class="cov8" title="1">if !match </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrTagRestrictToNotMatch)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if field.Interface() != reflect.Zero(field.Type()).Interface() </span><span class="cov8" title="1">{
+                if err := validateRequirements(model, t); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return errs</span>
+}
+
+/*
+Validate struct numeric field
+
+Rules:
+
+            required:        Empty value not allow
+            min:        Min numeric value allow
+            max:        Max numeric value allow
+                restrictTo: Field value must be one of the listed values
+
+An slice of type "error" will be return containing each failed rule
+*/
+func validateNumeric(t Tag, model reflect.Value, field reflect.Value) []error <span class="cov8" title="1">{
+        errs := []error{}
+
+        var value float64
+
+        switch field.Kind() </span>{
+        case reflect.Float32, reflect.Float64:<span class="cov8" title="1">
+                value = field.Float()</span>
+        case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:<span class="cov8" title="1">
+                value = float64(field.Int())</span>
+        case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:<span class="cov8" title="1">
+                value = float64(field.Uint())</span>
+        }
+
+        <span class="cov8" title="1">if t.Exists("required") &amp;&amp; value == 0 </span><span class="cov8" title="1">{
+                errs = append(errs, ErrNumericFieldrequired)
+        }</span> else<span class="cov8" title="1"> if value != 0 </span><span class="cov8" title="1">{
+                if t.GetFloat("min") &gt; 0 &amp;&amp; value &lt; t.GetFloat("min") </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrNumericFieldMinValue)
+                }</span>
+                <span class="cov8" title="1">if t.GetFloat("max") &gt; 0 &amp;&amp; value &gt; t.GetFloat("max") </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrNumericFieldMaxValue)
+                }</span>
+        }
+
+        <span class="cov8" title="1">values := t.GetSliceFloat("restrictTo", ' ')
+        if len(values) &gt; 0 </span><span class="cov8" title="1">{
+                match := false
+                for _, v := range values </span><span class="cov8" title="1">{
+                        if v == value </span><span class="cov8" title="1">{
+                                match = true
+                        }</span>
+                }
+                <span class="cov8" title="1">if !match </span><span class="cov8" title="1">{
+                        errs = append(errs, ErrTagRestrictToNotMatch)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if field.Interface() != reflect.Zero(field.Type()).Interface() </span><span class="cov8" title="1">{
+                if err := validateRequirements(model, t); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return errs</span>
+}
+
+/*
+Validate if the fields required by a field are empty and exist in the structure
+*/
+func validateRequirements(model reflect.Value, t Tag) error <span class="cov8" title="1">{
+        var err error
+        if t.Exists("require") </span><span class="cov8" title="1">{
+                for _, r := range t.GetSliceString("require", ' ') </span><span class="cov8" title="1">{
+                        _, exists := model.Elem().Type().FieldByName(r)
+                        if !exists </span><span class="cov8" title="1">{
+                                err = ErrTagRequireFieldNotExists
+                                break</span>
+                        } else<span class="cov8" title="1"> {
+                                required := reflect.Indirect(model).FieldByName(r)
+                                if required.Interface() == reflect.Zero(required.Type()).Interface() </span><span class="cov8" title="1">{
+                                        err = ErrTagRequireFieldFail
+                                        break</span>
+                                }
+                        }
+                }
+        }
+        <span class="cov8" title="1">return err</span>
+}
+
+/*
+Validate each structure field with a valid schema tag. The parameter model must
+be an struct ptr
+*/
+func Validate(model interface{}) (Result, error) <span class="cov8" title="1">{
+        result := Result{
+                Fields: map[string]Field{},
+        }
+
+        v := reflect.ValueOf(model)
+
+        if v.Kind() != reflect.Ptr </span><span class="cov8" title="1">{
+                return result, ErrValidatePtrExpected
+        }</span>
+
+        <span class="cov8" title="1">for i := 0; i &lt; v.Elem().NumField(); i++ </span><span class="cov8" title="1">{
+                t := ParseTag(v.Elem().Type().Field(i).Tag.Get("schema"))
+
+                if !t.IsEmpty() </span><span class="cov8" title="1">{
+
+                        fieldName := t.GetString("name")
+                        if fieldName == "" </span><span class="cov8" title="1">{
+                                fieldName = v.Elem().Type().Field(i).Name
+                        }</span>
+
+                        <span class="cov8" title="1">switch v.Elem().Type().Field(i).Type.Kind() </span>{
+                        case reflect.String:<span class="cov8" title="1">
+                                result.AddFieldErrors(fieldName, validateString(t, v, v.Elem().Field(i)))</span>
+                        case reflect.Float32, reflect.Float64,
+                                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:<span class="cov8" title="1">
+
+                                result.AddFieldErrors(fieldName, validateNumeric(t, v, v.Elem().Field(i)))</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if result.HasErrors() </span><span class="cov8" title="1">{
+                return result, ErrValidationFail
+        }</span>
+
+        <span class="cov8" title="1">return result, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
