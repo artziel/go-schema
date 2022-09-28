@@ -2,15 +2,24 @@ package schema
 
 import "strings"
 
+/*
+Structure used as return value by the function toPair
+*/
 type pair struct {
 	Name  string
 	Value string
 }
 
-func toPair(value string) pair {
+/*
+Split an string in 2 an return a pair struct value
+
+The first part resulting from the split will be assigned to Name and
+the second one to Value
+*/
+func toPair(value string, separator byte) pair {
 	result := pair{}
 
-	i := strings.Index(value, ":")
+	i := strings.Index(value, string(separator))
 	if i > -1 && i < len([]rune(value)) {
 		result.Name = value[:i]
 		result.Value = strings.Trim(value[i+1:], " \n\r\t")
@@ -23,6 +32,13 @@ func toPair(value string) pair {
 	return result
 }
 
+/*
+Split an string on N parts
+
+The "separator" param indicates the character from which the string will be split, the separator
+character will be ignored during the evaluation if it is between two characters equal to "quote"
+parameter
+*/
 func splitAt(s string, separator byte, quote byte) []string {
 	res := []string{}
 	var beg int

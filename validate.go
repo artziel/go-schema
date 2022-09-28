@@ -1,11 +1,23 @@
 package schema
 
 import (
-	"fmt"
 	"reflect"
 	"regexp"
 )
 
+/*
+Validate struct string field
+
+Rules:
+
+	    required:	Empty value not allow
+	    minLength:	Min string length allow
+	    maxLength:	Max string length allow
+	    regex:	Value must match with regular expresion
+		restrictTo: Field value must be one of the listed values
+
+An slice of type "error" will be return containing each failed rule
+*/
 func validateString(t Tag, value string) []error {
 	errs := []error{}
 
@@ -29,11 +41,10 @@ func validateString(t Tag, value string) []error {
 		}
 	}
 
-	require := t.GetSliceString("restrictTo", ' ')
-	fmt.Printf("%v\n", require)
-	if len(require) > 0 {
+	values := t.GetSliceString("restrictTo", ' ')
+	if len(values) > 0 {
 		match := false
-		for _, v := range require {
+		for _, v := range values {
 			if v == value {
 				match = true
 			}
@@ -46,6 +57,18 @@ func validateString(t Tag, value string) []error {
 	return errs
 }
 
+/*
+Validate struct numeric field
+
+Rules:
+
+	    required:	Empty value not allow
+	    min:	Min numeric value allow
+	    max:	Max numeric value allow
+		restrictTo: Field value must be one of the listed values
+
+An slice of type "error" will be return containing each failed rule
+*/
 func validateNumeric(t Tag, value float64) []error {
 	errs := []error{}
 
@@ -76,6 +99,33 @@ func validateNumeric(t Tag, value float64) []error {
 	return errs
 }
 
+/*
+Validate if the fields required by a field are empty and exist in the structure
+*/
+func validateRequirements(model reflect.Value, t Tag) error {
+	var err error
+	if t.Exists("require") {
+		for _, r := range t.GetSliceString("require", ' ') {
+			_, exists := model.Elem().Type().FieldByName(r)
+			if !exists {
+				err = ErrTagRequireFieldNotExists
+				break
+			} else {
+				required := reflect.Indirect(model).FieldByName(r)
+				if required.Interface() == reflect.Zero(required.Type()).Interface() {
+					err = ErrTagRequireFieldFail
+					break
+				}
+			}
+		}
+	}
+	return err
+}
+
+/*
+Validate each structure field with a valid schema tag. The parameter model must
+be an struct ptr
+*/
 func Validate(model interface{}) (Result, error) {
 	result := Result{
 		Fields: map[string]Field{},
@@ -92,80 +142,34 @@ func Validate(model interface{}) (Result, error) {
 
 		if !t.IsEmpty() {
 
-			fieldErrors := []error{}
-			checkRequirements := false
+			fieldName := t.GetString("name")
+			if fieldName == "" {
+				fieldName = v.Elem().Type().Field(i).Name
+			}
 
 			switch v.Elem().Type().Field(i).Type.Kind() {
 			case reflect.String:
 				value := v.Elem().Field(i).String()
-				fieldErrors = append(fieldErrors, validateString(t, value)...)
-				if value != "" {
-					checkRequirements = true
-				}
+				result.AddFieldErrors(fieldName, validateString(t, value))
 			case reflect.Float32, reflect.Float64:
 				value := v.Elem().Field(i).Float()
-				fieldErrors = append(fieldErrors, validateNumeric(t, value)...)
-				if value != 0 {
-					checkRequirements = true
-				}
+				result.AddFieldErrors(fieldName, validateNumeric(t, value))
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				value := v.Elem().Field(i).Int()
-				fieldErrors = append(fieldErrors, validateNumeric(t, float64(value))...)
-				if value != 0 {
-					checkRequirements = true
-				}
+				result.AddFieldErrors(fieldName, validateNumeric(t, float64(value)))
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				value := v.Elem().Field(i).Uint()
-				fieldErrors = append(fieldErrors, validateNumeric(t, float64(value))...)
-				if value != 0 {
-					checkRequirements = true
-				}
+				result.AddFieldErrors(fieldName, validateNumeric(t, float64(value)))
 			}
-
-			if t.Exists("require") && checkRequirements {
-				for _, r := range t.GetSliceString("require", ' ') {
-					_, exists := v.Elem().Type().FieldByName(r)
-					if !exists {
-						fieldErrors = append(fieldErrors, ErrTagRequireFieldNotExists)
-						break
-					} else {
-						required := reflect.Indirect(v).FieldByName(r)
-						if required.Kind() == reflect.String {
-							if required.String() == "" {
-								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-								break
-							}
-						} else if required.Kind() == reflect.Float32 || required.Kind() == reflect.Float64 {
-							if required.Float() == 0 {
-								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-								break
-							}
-						} else if required.Kind() == reflect.Int || required.Kind() == reflect.Int8 || required.Kind() == reflect.Int16 || required.Kind() == reflect.Int32 || required.Kind() == reflect.Int64 {
-							if required.Int() == 0 {
-								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-								break
-							}
-						} else if required.Kind() == reflect.Uint || required.Kind() == reflect.Uint8 || required.Kind() == reflect.Uint16 || required.Kind() == reflect.Uint32 || required.Kind() == reflect.Uint64 {
-							if required.Uint() == 0 {
-								fieldErrors = append(fieldErrors, ErrTagRequireFieldFail)
-								break
-							}
-						}
-					}
-				}
-			}
-
-			if len(fieldErrors) > 0 {
-				if t.GetString("name") != "" {
-					result.Fields[t.GetString("name")] = Field{Errors: fieldErrors}
-				} else {
-					result.Fields[v.Elem().Type().Field(i).Name] = Field{Errors: fieldErrors}
+			if v.Elem().Field(i).Interface() != reflect.Zero(v.Elem().Field(i).Type()).Interface() {
+				if err := validateRequirements(v, t); err != nil {
+					result.AddFieldError(fieldName, err)
 				}
 			}
 		}
 	}
 
-	if len(result.Fields) > 0 {
+	if result.HasErrors() {
 		return result, ErrValidationFail
 	}
 

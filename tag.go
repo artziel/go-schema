@@ -5,14 +5,23 @@ import (
 	"strings"
 )
 
+/*
+Structure that will contain the values of the parsed tag
+*/
 type Tag struct {
 	Values map[string]string
 }
 
+/*
+Check if the Tag structure contains values parsed or not
+*/
 func (t *Tag) IsEmpty() bool {
 	return len(t.Values) == 0
 }
 
+/*
+Check if the Tag structure contains the specified entry
+*/
 func (t *Tag) Exists(name string) bool {
 	if _, exists := t.Values[strings.ToLower(name)]; exists {
 		return true
@@ -20,6 +29,9 @@ func (t *Tag) Exists(name string) bool {
 	return false
 }
 
+/*
+Check if the Tag structure entry has a value
+*/
 func (t *Tag) HasValue(name string) bool {
 	if t.Exists(name) {
 		return t.Values[strings.ToLower(name)] != ""
@@ -27,6 +39,9 @@ func (t *Tag) HasValue(name string) bool {
 	return false
 }
 
+/*
+Return the value of the specified entry as string
+*/
 func (t *Tag) GetString(name string) string {
 	if t.Exists(name) {
 		return t.Values[strings.ToLower(name)]
@@ -34,6 +49,9 @@ func (t *Tag) GetString(name string) string {
 	return ""
 }
 
+/*
+Return the value of the specified entry as uint64
+*/
 func (t *Tag) GetUint(name string) uint64 {
 	v := t.GetString(name)
 
@@ -45,6 +63,9 @@ func (t *Tag) GetUint(name string) uint64 {
 	return 0
 }
 
+/*
+Return the value of the specified entry as int64
+*/
 func (t *Tag) GetInt(name string) int64 {
 	v := t.GetString(name)
 
@@ -56,6 +77,9 @@ func (t *Tag) GetInt(name string) int64 {
 	return 0
 }
 
+/*
+Return the value of the specified entry as float64
+*/
 func (t *Tag) GetFloat(name string) float64 {
 	v := t.GetString(name)
 
@@ -67,6 +91,10 @@ func (t *Tag) GetFloat(name string) float64 {
 	return 0
 }
 
+/*
+Return an Slice of string of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
 func (t *Tag) GetSliceString(name string, separator byte) []string {
 	result := []string{}
 	v := t.GetString(name)
@@ -81,6 +109,10 @@ func (t *Tag) GetSliceString(name string, separator byte) []string {
 	return result
 }
 
+/*
+Return an Slice of int64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
 func (t *Tag) GetSliceInt(name string, separator byte) []int64 {
 	values := t.GetSliceString(name, separator)
 	if len(values) == 0 {
@@ -96,6 +128,10 @@ func (t *Tag) GetSliceInt(name string, separator byte) []int64 {
 	return result
 }
 
+/*
+Return an Slice of float64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
 func (t *Tag) GetSliceFloat(name string, separator byte) []float64 {
 	values := t.GetSliceString(name, separator)
 	if len(values) == 0 {
@@ -111,6 +147,10 @@ func (t *Tag) GetSliceFloat(name string, separator byte) []float64 {
 	return result
 }
 
+/*
+Return an Slice of uint64 of the specified entry. The separator parameter indicate
+the character that will be used for the entry raw value string split
+*/
 func (t *Tag) GetSliceUint(name string, separator byte) []uint64 {
 	values := t.GetSliceString(name, separator)
 	if len(values) == 0 {
@@ -126,6 +166,9 @@ func (t *Tag) GetSliceUint(name string, separator byte) []uint64 {
 	return result
 }
 
+/*
+Parse an string and return a populated Tag structure value
+*/
 func ParseTag(value string) Tag {
 
 	tag := Tag{
@@ -135,7 +178,7 @@ func ParseTag(value string) Tag {
 	values := splitAt(value, ',', '\'')
 
 	for _, v := range values {
-		p := toPair(v)
+		p := toPair(v, ':')
 		tag.Values[p.Name] = p.Value
 	}
 
