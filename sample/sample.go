@@ -12,7 +12,7 @@ type Sample struct {
 	ID       uint   `json:"id" schema:"name:id,required"`
 	Username string `json:"username" schema:"name:username,require:Password"`
 	Password string `json:"password" schema:"name:password"`
-	Status   string `json:"status" schema:"name:status,restrictTo:ENABLED DISABLED LOCKED,require:Username"`
+	Status   string `json:"status" schema:"name:status,restrictTo:ENABLED DISABLED LOCKED,require:Username Age"`
 }
 
 func main() {

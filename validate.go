@@ -58,7 +58,7 @@ func validateString(t Tag, model reflect.Value, field reflect.Value) []error {
 
 	if field.Interface() != reflect.Zero(field.Type()).Interface() {
 		if err := validateRequirements(model, t); err != nil {
-			errs = append(errs, ErrTagRestrictToNotMatch)
+			errs = append(errs, err)
 		}
 	}
 
@@ -117,7 +117,7 @@ func validateNumeric(t Tag, model reflect.Value, field reflect.Value) []error {
 
 	if field.Interface() != reflect.Zero(field.Type()).Interface() {
 		if err := validateRequirements(model, t); err != nil {
-			errs = append(errs, ErrTagRestrictToNotMatch)
+			errs = append(errs, err)
 		}
 	}
 
