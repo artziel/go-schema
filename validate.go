@@ -18,8 +18,10 @@ Rules:
 
 An slice of type "error" will be return containing each failed rule
 */
-func validateString(t Tag, value string) []error {
+func validateString(t Tag, model reflect.Value, field reflect.Value) []error {
 	errs := []error{}
+
+	value := field.String()
 
 	if t.Exists("required") && value == "" {
 		errs = append(errs, ErrStringFieldrequired)
@@ -54,6 +56,12 @@ func validateString(t Tag, value string) []error {
 		}
 	}
 
+	if field.Interface() != reflect.Zero(field.Type()).Interface() {
+		if err := validateRequirements(model, t); err != nil {
+			errs = append(errs, ErrTagRestrictToNotMatch)
+		}
+	}
+
 	return errs
 }
 
@@ -69,8 +77,19 @@ Rules:
 
 An slice of type "error" will be return containing each failed rule
 */
-func validateNumeric(t Tag, value float64) []error {
+func validateNumeric(t Tag, model reflect.Value, field reflect.Value) []error {
 	errs := []error{}
+
+	var value float64
+
+	switch field.Kind() {
+	case reflect.Float32, reflect.Float64:
+		value = field.Float()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		value = float64(field.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		value = float64(field.Uint())
+	}
 
 	if t.Exists("required") && value == 0 {
 		errs = append(errs, ErrNumericFieldrequired)
@@ -92,6 +111,12 @@ func validateNumeric(t Tag, value float64) []error {
 			}
 		}
 		if !match {
+			errs = append(errs, ErrTagRestrictToNotMatch)
+		}
+	}
+
+	if field.Interface() != reflect.Zero(field.Type()).Interface() {
+		if err := validateRequirements(model, t); err != nil {
 			errs = append(errs, ErrTagRestrictToNotMatch)
 		}
 	}
@@ -149,22 +174,12 @@ func Validate(model interface{}) (Result, error) {
 
 			switch v.Elem().Type().Field(i).Type.Kind() {
 			case reflect.String:
-				value := v.Elem().Field(i).String()
-				result.AddFieldErrors(fieldName, validateString(t, value))
-			case reflect.Float32, reflect.Float64:
-				value := v.Elem().Field(i).Float()
-				result.AddFieldErrors(fieldName, validateNumeric(t, value))
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				value := v.Elem().Field(i).Int()
-				result.AddFieldErrors(fieldName, validateNumeric(t, float64(value)))
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				value := v.Elem().Field(i).Uint()
-				result.AddFieldErrors(fieldName, validateNumeric(t, float64(value)))
-			}
-			if v.Elem().Field(i).Interface() != reflect.Zero(v.Elem().Field(i).Type()).Interface() {
-				if err := validateRequirements(v, t); err != nil {
-					result.AddFieldError(fieldName, err)
-				}
+				result.AddFieldErrors(fieldName, validateString(t, v, v.Elem().Field(i)))
+			case reflect.Float32, reflect.Float64,
+				reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+
+				result.AddFieldErrors(fieldName, validateNumeric(t, v, v.Elem().Field(i)))
 			}
 		}
 	}
