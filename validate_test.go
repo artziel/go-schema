@@ -171,15 +171,18 @@ func TestValidate(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		_, err := Validate(&test.Input)
+		result, err := Validate(&test.Input)
 		if err == nil && test.ExpectedError != nil {
 			t.Errorf("Test %d expected error validation:\nGot  No Error\nWant %s", i, test.ExpectedError)
 		} else if err != nil && test.ExpectedError == nil {
 			t.Errorf("Test %d unexpected error validation:\nGot  %s\nWant No Error", i, err)
 		} else if err != nil && test.ExpectedError != err {
 			t.Errorf("Test %d unexpected error validation:\nGot  %s\nWant %s", i, err, test.ExpectedError)
+		} else if err != nil && test.ExpectedError == err {
+			if !result.HasErrors() {
+				t.Errorf("Test %d validation result should have errors", i)
+			}
 		}
-
 	}
 
 }

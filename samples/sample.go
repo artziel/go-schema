@@ -17,6 +17,12 @@ type Sample struct {
 
 func main() {
 
+	test := schema.Tag{
+		Values: map[string]string{},
+	}
+	// test := schema.ParseTag("")
+	fmt.Printf("Should be Empty: %v\n", test.IsEmpty())
+
 	val := Sample{
 		ID:       1,
 		Username: "artziel",

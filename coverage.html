@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/artziel/go-schema/schema.go (26.9%)</option>
+				<option value="file0">github.com/artziel/go-schema/schema.go (92.3%)</option>
 				
-				<option value="file1">github.com/artziel/go-schema/tag.go (66.1%)</option>
+				<option value="file1">github.com/artziel/go-schema/tag.go (100.0%)</option>
 				
 				<option value="file2">github.com/artziel/go-schema/utilities.go (100.0%)</option>
 				
@@ -89,21 +89,21 @@ type fieldErrors []error
 /*
 Allow errors slice json encoding
 */
-func (se fieldErrors) MarshalJSON() ([]byte, error) <span class="cov0" title="0">{
+func (se fieldErrors) MarshalJSON() ([]byte, error) <span class="cov8" title="1">{
         data := []byte("[")
-        for i, err := range se </span><span class="cov0" title="0">{
+        for i, err := range se </span><span class="cov8" title="1">{
                 if i != 0 </span><span class="cov0" title="0">{
                         data = append(data, ',')
                 }</span>
 
-                <span class="cov0" title="0">j, err := json.Marshal(err.Error())
+                <span class="cov8" title="1">j, err := json.Marshal(err.Error())
                 if err != nil </span><span class="cov0" title="0">{
                         return nil, err
                 }</span>
 
-                <span class="cov0" title="0">data = append(data, j...)</span>
+                <span class="cov8" title="1">data = append(data, j...)</span>
         }
-        <span class="cov0" title="0">data = append(data, ']')
+        <span class="cov8" title="1">data = append(data, ']')
 
         return data, nil</span>
 }
@@ -135,18 +135,18 @@ func (r *Result) HasErrors() bool <span class="cov8" title="1">{
 Add an error to a field on the Result structure. If fieldName do not exist on Result fields,
 add a new field entry with the error, otherwise append the error to the field entry
 */
-func (r *Result) AddFieldError(fieldName string, err error) <span class="cov0" title="0">{
+func (r *Result) AddFieldError(fieldName string, err error) <span class="cov8" title="1">{
         f := Field{
                 Errors: []error{},
         }
-        if err != nil </span><span class="cov0" title="0">{
-                if _, exists := r.Fields[fieldName]; exists </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
+                if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
                         f = r.Fields[fieldName]
                         f.Errors = append(f.Errors, err)
-                }</span> else<span class="cov0" title="0"> {
+                }</span> else<span class="cov8" title="1"> {
                         f = Field{Errors: []error{err}}
                 }</span>
-                <span class="cov0" title="0">r.Fields[fieldName] = f</span>
+                <span class="cov8" title="1">r.Fields[fieldName] = f</span>
         }
 }
 
@@ -160,7 +160,7 @@ func (r *Result) AddFieldErrors(fieldName string, errs []error) <span class="cov
         }
         if errs != nil </span><span class="cov8" title="1">{
                 if len(errs) &gt; 0 </span><span class="cov8" title="1">{
-                        if _, exists := r.Fields[fieldName]; exists </span><span class="cov0" title="0">{
+                        if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
                                 f = r.Fields[fieldName]
                                 f.Errors = append(f.Errors, errs...)
                         }</span> else<span class="cov8" title="1"> {
@@ -240,16 +240,12 @@ func (t *Tag) GetUint(name string) uint64 <span class="cov8" title="1">{
 /*
 Return the value of the specified entry as int64
 */
-func (t *Tag) GetInt(name string) int64 <span class="cov0" title="0">{
+func (t *Tag) GetInt(name string) int64 <span class="cov8" title="1">{
         v := t.GetString(name)
 
-        if v != "" </span><span class="cov0" title="0">{
-                value, _ := strconv.Atoi(v)
-                return int64(value)
-        }</span>
-
-        <span class="cov0" title="0">return 0</span>
-}
+        value, _ := strconv.Atoi(v)
+        return int64(value)
+}</span>
 
 /*
 Return the value of the specified entry as float64
@@ -287,19 +283,19 @@ func (t *Tag) GetSliceString(name string, separator byte) []string <span class="
 Return an Slice of int64 of the specified entry. The separator parameter indicate
 the character that will be used for the entry raw value string split
 */
-func (t *Tag) GetSliceInt(name string, separator byte) []int64 <span class="cov0" title="0">{
+func (t *Tag) GetSliceInt(name string, separator byte) []int64 <span class="cov8" title="1">{
         values := t.GetSliceString(name, separator)
-        if len(values) == 0 </span><span class="cov0" title="0">{
+        if len(values) == 0 </span><span class="cov8" title="1">{
                 return []int64{}
         }</span>
-        <span class="cov0" title="0">result := []int64{}
+        <span class="cov8" title="1">result := []int64{}
 
-        for _, itm := range values </span><span class="cov0" title="0">{
+        for _, itm := range values </span><span class="cov8" title="1">{
                 v, _ := strconv.Atoi(itm)
                 result = append(result, int64(v))
         }</span>
 
-        <span class="cov0" title="0">return result</span>
+        <span class="cov8" title="1">return result</span>
 }
 
 /*
@@ -325,19 +321,19 @@ func (t *Tag) GetSliceFloat(name string, separator byte) []float64 <span class="
 Return an Slice of uint64 of the specified entry. The separator parameter indicate
 the character that will be used for the entry raw value string split
 */
-func (t *Tag) GetSliceUint(name string, separator byte) []uint64 <span class="cov0" title="0">{
+func (t *Tag) GetSliceUint(name string, separator byte) []uint64 <span class="cov8" title="1">{
         values := t.GetSliceString(name, separator)
-        if len(values) == 0 </span><span class="cov0" title="0">{
+        if len(values) == 0 </span><span class="cov8" title="1">{
                 return []uint64{}
         }</span>
-        <span class="cov0" title="0">result := []uint64{}
+        <span class="cov8" title="1">result := []uint64{}
 
-        for _, itm := range values </span><span class="cov0" title="0">{
+        for _, itm := range values </span><span class="cov8" title="1">{
                 v, _ := strconv.ParseUint(itm, 10, 64)
                 result = append(result, v)
         }</span>
 
-        <span class="cov0" title="0">return result</span>
+        <span class="cov8" title="1">return result</span>
 }
 
 /*
@@ -352,9 +348,11 @@ func ParseTag(value string) Tag <span class="cov8" title="1">{
         values := splitAt(value, ',', '\'')
 
         for _, v := range values </span><span class="cov8" title="1">{
-                p := toPair(v, ':')
-                tag.Values[p.Name] = p.Value
-        }</span>
+                if v != "" </span><span class="cov8" title="1">{
+                        p := toPair(v, ':')
+                        tag.Values[p.Name] = p.Value
+                }</span>
+        }
 
         <span class="cov8" title="1">return tag</span>
 }
@@ -402,11 +400,17 @@ character will be ignored during the evaluation if it is between two characters 
 parameter
 */
 func splitAt(s string, separator byte, quote byte) []string <span class="cov8" title="1">{
+
         res := []string{}
         var beg int
         var inString bool
 
-        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+        s = strings.Trim(s, " \n\r\t")
+        if len(s) == 0 </span><span class="cov8" title="1">{
+                return res
+        }</span>
+
+        <span class="cov8" title="1">for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
                 if s[i] == separator &amp;&amp; !inString </span><span class="cov8" title="1">{
                         res = append(res, s[beg:i])
                         beg = i + 1

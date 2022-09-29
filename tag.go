@@ -69,12 +69,8 @@ Return the value of the specified entry as int64
 func (t *Tag) GetInt(name string) int64 {
 	v := t.GetString(name)
 
-	if v != "" {
-		value, _ := strconv.Atoi(v)
-		return int64(value)
-	}
-
-	return 0
+	value, _ := strconv.Atoi(v)
+	return int64(value)
 }
 
 /*
@@ -178,8 +174,10 @@ func ParseTag(value string) Tag {
 	values := splitAt(value, ',', '\'')
 
 	for _, v := range values {
-		p := toPair(v, ':')
-		tag.Values[p.Name] = p.Value
+		if v != "" {
+			p := toPair(v, ':')
+			tag.Values[p.Name] = p.Value
+		}
 	}
 
 	return tag

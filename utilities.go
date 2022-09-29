@@ -40,9 +40,15 @@ character will be ignored during the evaluation if it is between two characters 
 parameter
 */
 func splitAt(s string, separator byte, quote byte) []string {
+
 	res := []string{}
 	var beg int
 	var inString bool
+
+	s = strings.Trim(s, " \n\r\t")
+	if len(s) == 0 {
+		return res
+	}
 
 	for i := 0; i < len(s); i++ {
 		if s[i] == separator && !inString {
