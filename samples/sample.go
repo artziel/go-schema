@@ -24,7 +24,7 @@ func main() {
 	fmt.Printf("Should be Empty: %v\n", test.IsEmpty())
 
 	val := Sample{
-		ID:       1,
+		ID:       0,
 		Username: "artziel",
 		Status:   "ENABLED",
 		Password: "asdf",

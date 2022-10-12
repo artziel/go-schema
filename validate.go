@@ -154,7 +154,7 @@ be an struct ptr
 */
 func Validate(model interface{}) (Result, error) {
 	result := Result{
-		Fields: map[string]Field{},
+		Fields: map[string]fieldErrors{},
 	}
 
 	v := reflect.ValueOf(model)

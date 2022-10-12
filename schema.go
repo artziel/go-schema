@@ -44,7 +44,7 @@ Structure return by Validation function
 After validation will contain only fields that fails
 */
 type Result struct {
-	Fields map[string]Field `json:"fields"`
+	Fields map[string]fieldErrors `json:"fields"`
 }
 
 /*
@@ -59,15 +59,12 @@ Add an error to a field on the Result structure. If fieldName do not exist on Re
 add a new field entry with the error, otherwise append the error to the field entry
 */
 func (r *Result) AddFieldError(fieldName string, err error) {
-	f := Field{
-		Errors: []error{},
-	}
 	if err != nil {
+		f := []error{}
 		if _, exists := r.Fields[fieldName]; exists {
-			f = r.Fields[fieldName]
-			f.Errors = append(f.Errors, err)
+			f = append(r.Fields[fieldName], err)
 		} else {
-			f = Field{Errors: []error{err}}
+			f = []error{err}
 		}
 		r.Fields[fieldName] = f
 	}
@@ -78,16 +75,14 @@ Add an slice of errors to a field on the Result structure. If fieldName do not e
 add a new field entry with the error, otherwise append the errors to the field entry
 */
 func (r *Result) AddFieldErrors(fieldName string, errs []error) {
-	f := Field{
-		Errors: []error{},
-	}
 	if errs != nil {
 		if len(errs) > 0 {
+			f := []error{}
 			if _, exists := r.Fields[fieldName]; exists {
 				f = r.Fields[fieldName]
-				f.Errors = append(f.Errors, errs...)
+				f = append(f, errs...)
 			} else {
-				f = Field{Errors: errs}
+				f = errs
 			}
 			r.Fields[fieldName] = f
 		}

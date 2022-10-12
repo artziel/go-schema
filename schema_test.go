@@ -7,7 +7,7 @@ import (
 
 func TestSchema(t *testing.T) {
 	result := Result{
-		Fields: map[string]Field{},
+		Fields: map[string]fieldErrors{},
 	}
 
 	if result.HasErrors() {
@@ -23,33 +23,33 @@ func TestSchema(t *testing.T) {
 	if !result.HasErrors() {
 		t.Errorf("Test Fail, Result should have errors")
 	}
-	if len(result.Fields["ID"].Errors) != 2 {
+	if len(result.Fields["ID"]) != 2 {
 		if !result.HasErrors() {
 			t.Errorf("Test Fail, Result should have 2 \"ID\" errors")
 		}
 	}
 
 	result = Result{
-		Fields: map[string]Field{},
+		Fields: map[string]fieldErrors{},
 	}
 	errs := []error{ErrStringFieldMaxlength, ErrStringFieldrequired, ErrTagNameMissingValue}
 	result.AddFieldErrors("Username", errs)
-	if !result.HasErrors() || len(result.Fields["Username"].Errors) != 3 {
+	if !result.HasErrors() || len(result.Fields["Username"]) != 3 {
 		t.Errorf("Test Fail, Result should have 3 \"Username\" errors")
 	}
 
 	errs = []error{ErrTagRestrictToNotMatch, ErrTagMaxMissingValue}
 	result.AddFieldErrors("Username", errs)
-	if len(result.Fields["Username"].Errors) != 5 {
+	if len(result.Fields["Username"]) != 5 {
 		t.Errorf("Test Fail, Result should have 5 \"Username\" errors")
 	}
 
 	result = Result{
-		Fields: map[string]Field{},
+		Fields: map[string]fieldErrors{},
 	}
 	result.AddFieldError("ID", ErrNumericFieldMaxValue)
 	encoded, _ := json.Marshal(result)
-	expected := `{"fields":{"ID":{"errors":["the field value is greater than the maximum numeric value allowed"]}}}`
+	expected := `{"fields":{"ID":["the field value is greater than the maximum numeric value allowed"]}}`
 	if string(encoded) != expected {
 		t.Errorf("Test Fail, Result JSON do not match expected value:\nGot  %s\nWant %s", string(encoded), expected)
 	}

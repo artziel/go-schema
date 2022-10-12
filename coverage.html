@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/artziel/go-schema/schema.go (92.3%)</option>
+				<option value="file0">github.com/artziel/go-schema/schema.go (92.0%)</option>
 				
 				<option value="file1">github.com/artziel/go-schema/tag.go (100.0%)</option>
 				
@@ -121,7 +121,7 @@ Structure return by Validation function
 After validation will contain only fields that fails
 */
 type Result struct {
-        Fields map[string]Field `json:"fields"`
+        Fields map[string]fieldErrors `json:"fields"`
 }
 
 /*
@@ -136,15 +136,12 @@ Add an error to a field on the Result structure. If fieldName do not exist on Re
 add a new field entry with the error, otherwise append the error to the field entry
 */
 func (r *Result) AddFieldError(fieldName string, err error) <span class="cov8" title="1">{
-        f := Field{
-                Errors: []error{},
-        }
         if err != nil </span><span class="cov8" title="1">{
+                f := []error{}
                 if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
-                        f = r.Fields[fieldName]
-                        f.Errors = append(f.Errors, err)
+                        f = append(r.Fields[fieldName], err)
                 }</span> else<span class="cov8" title="1"> {
-                        f = Field{Errors: []error{err}}
+                        f = []error{err}
                 }</span>
                 <span class="cov8" title="1">r.Fields[fieldName] = f</span>
         }
@@ -155,16 +152,14 @@ Add an slice of errors to a field on the Result structure. If fieldName do not e
 add a new field entry with the error, otherwise append the errors to the field entry
 */
 func (r *Result) AddFieldErrors(fieldName string, errs []error) <span class="cov8" title="1">{
-        f := Field{
-                Errors: []error{},
-        }
         if errs != nil </span><span class="cov8" title="1">{
                 if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                        f := []error{}
                         if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
                                 f = r.Fields[fieldName]
-                                f.Errors = append(f.Errors, errs...)
+                                f = append(f, errs...)
                         }</span> else<span class="cov8" title="1"> {
-                                f = Field{Errors: errs}
+                                f = errs
                         }</span>
                         <span class="cov8" title="1">r.Fields[fieldName] = f</span>
                 }
@@ -582,7 +577,7 @@ be an struct ptr
 */
 func Validate(model interface{}) (Result, error) <span class="cov8" title="1">{
         result := Result{
-                Fields: map[string]Field{},
+                Fields: map[string]fieldErrors{},
         }
 
         v := reflect.ValueOf(model)
