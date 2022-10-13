@@ -60,13 +60,11 @@ add a new field entry with the error, otherwise append the error to the field en
 */
 func (r *Result) AddFieldError(fieldName string, err error) {
 	if err != nil {
-		f := []error{}
-		if _, exists := r.Fields[fieldName]; exists {
-			f = append(r.Fields[fieldName], err)
+		if _, exists := r.Fields[fieldName]; !exists {
+			r.Fields[fieldName] = []error{err}
 		} else {
-			f = []error{err}
+			r.Fields[fieldName] = append(r.Fields[fieldName], err)
 		}
-		r.Fields[fieldName] = f
 	}
 }
 
@@ -75,16 +73,11 @@ Add an slice of errors to a field on the Result structure. If fieldName do not e
 add a new field entry with the error, otherwise append the errors to the field entry
 */
 func (r *Result) AddFieldErrors(fieldName string, errs []error) {
-	if errs != nil {
-		if len(errs) > 0 {
-			f := []error{}
-			if _, exists := r.Fields[fieldName]; exists {
-				f = r.Fields[fieldName]
-				f = append(f, errs...)
-			} else {
-				f = errs
-			}
-			r.Fields[fieldName] = f
+	if len(errs) > 0 {
+		if _, exists := r.Fields[fieldName]; !exists {
+			r.Fields[fieldName] = append(r.Fields[fieldName], errs...)
+		} else {
+			r.Fields[fieldName] = errs
 		}
 	}
 }
