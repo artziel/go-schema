@@ -49,7 +49,7 @@ func TestSchema(t *testing.T) {
 	}
 	result.AddFieldError("ID", ErrNumericFieldMaxValue)
 	encoded, _ := json.Marshal(result)
-	expected := `{"fields":{"ID":["the field value is greater than the maximum numeric value allowed"]}}`
+	expected := `{"fields":{"ID":["(8003) the field value is greater than the maximum numeric value allowed"]}}`
 	if string(encoded) != expected {
 		t.Errorf("Test Fail, Result JSON do not match expected value:\nGot  %s\nWant %s", string(encoded), expected)
 	}
