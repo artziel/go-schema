@@ -75,9 +75,9 @@ add a new field entry with the error, otherwise append the errors to the field e
 func (r *Result) AddFieldErrors(fieldName string, errs []error) {
 	if len(errs) > 0 {
 		if _, exists := r.Fields[fieldName]; !exists {
-			r.Fields[fieldName] = append(r.Fields[fieldName], errs...)
-		} else {
 			r.Fields[fieldName] = errs
+		} else {
+			r.Fields[fieldName] = append(r.Fields[fieldName], errs...)
 		}
 	}
 }

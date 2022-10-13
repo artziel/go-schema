@@ -57,7 +57,7 @@
 				
 				<option value="file0">github.com/artziel/go-schema/errors.go (100.0%)</option>
 				
-				<option value="file1">github.com/artziel/go-schema/schema.go (92.0%)</option>
+				<option value="file1">github.com/artziel/go-schema/schema.go (89.5%)</option>
 				
 				<option value="file2">github.com/artziel/go-schema/tag.go (100.0%)</option>
 				
@@ -209,13 +209,11 @@ add a new field entry with the error, otherwise append the error to the field en
 */
 func (r *Result) AddFieldError(fieldName string, err error) <span class="cov8" title="1">{
         if err != nil </span><span class="cov8" title="1">{
-                f := []error{}
-                if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
-                        f = append(r.Fields[fieldName], err)
+                if _, exists := r.Fields[fieldName]; !exists </span><span class="cov8" title="1">{
+                        r.Fields[fieldName] = []error{err}
                 }</span> else<span class="cov8" title="1"> {
-                        f = []error{err}
+                        r.Fields[fieldName] = append(r.Fields[fieldName], err)
                 }</span>
-                <span class="cov8" title="1">r.Fields[fieldName] = f</span>
         }
 }
 
@@ -224,17 +222,12 @@ Add an slice of errors to a field on the Result structure. If fieldName do not e
 add a new field entry with the error, otherwise append the errors to the field entry
 */
 func (r *Result) AddFieldErrors(fieldName string, errs []error) <span class="cov8" title="1">{
-        if errs != nil </span><span class="cov8" title="1">{
-                if len(errs) &gt; 0 </span><span class="cov8" title="1">{
-                        f := []error{}
-                        if _, exists := r.Fields[fieldName]; exists </span><span class="cov8" title="1">{
-                                f = r.Fields[fieldName]
-                                f = append(f, errs...)
-                        }</span> else<span class="cov8" title="1"> {
-                                f = errs
-                        }</span>
-                        <span class="cov8" title="1">r.Fields[fieldName] = f</span>
-                }
+        if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                if _, exists := r.Fields[fieldName]; !exists </span><span class="cov8" title="1">{
+                        r.Fields[fieldName] = errs
+                }</span> else<span class="cov8" title="1"> {
+                        r.Fields[fieldName] = append(r.Fields[fieldName], errs...)
+                }</span>
         }
 }
 </pre>
